@@ -17,7 +17,7 @@ Fine3399固件的DTS中已经开启了pcie2.0 x2通道，双网口，HDMI，led�
 
 **2024.4.20: 添加R08支持**  
 
-2024.5.11: 将PWM、WIFI、蓝牙在DTS中的状况开启，在本仓库添加了Fine3399的AP6236固件，并且修改了rebuild脚本，经测试wifi和蓝牙已经能够正常使用，至此Armbian几近完美。  
+2024.5.11: 将PWM、WIFI、蓝牙在DTS中的状态开启，在本仓库添加了Fine3399的AP6236固件，并且修改了rebuild脚本，**经测试wifi和蓝牙已经能够正常使用，至此Armbian几近完美**。  
 
 2024.6.2: 将DTS提交给了ophub大佬，同时Lemon1151也将uboot提交。现ophub仓库的固件已正常。  
 https://github.com/unifreq/linux-6.1.y/commit/c1c970d1b1de469123b5f16b6265474edba48111  
