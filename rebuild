@@ -718,7 +718,7 @@ make_image() {
             #echo -e "${INFO} 03. For [ ${board} ] write bootloader: ${BOOTLOADER_IMG}"
         fi
 
-        if [[ "${board}" == "fine3399" ]] || [[ "${board}" == "fine3399-full" ]]; then
+        if [[ "${board}" == "fine3399" ]] || [[ "${board}" == "fine3399-plus" ]]; then
             dd if="${bootloader_path}/uboot-bozz-rk3399.bin" of="${loop_new}" bs=1k skip=32 seek=32 conv=notrunc 2>/dev/null
             echo -e "Fine3399 U-boot替换成功"
         fi
@@ -796,8 +796,8 @@ copy_files() {
     [[ "${PLATFORM}" == "amlogic" ]] && cp -rf ${uboot_path}/${PLATFORM}/overload/* ${tag_bootfs}
 
     # Copy the Fine3399 wifi AP6236 firmware
-    if [[ "${board}" == "fine3399-full" ]]; then
-        fine3399_brcm="${different_files}/${board}/brcm"
+    if [[ "${board}" == "fine3399" ]] || [[ "${board}" == "fine3399-plus" ]]; then
+        fine3399_brcm="${different_files}/fine3399/brcm"
         [[ -d "${fine3399_brcm}" ]] && cp -af ${fine3399_brcm}/* ${tag_rootfs}/usr/lib/firmware/brcm
         echo -e "Fine3399 AP6236固件添加成功"
     fi

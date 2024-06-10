@@ -5,28 +5,33 @@ Fine3399资料：https://gitee.com/opengisbook/Fine3399-Official
 早期固件：https://github.com/xiayang0521/rk3399-images/releases/tag/fine3399-images  
 cm9vdA大佬适配的DTS：https://github.com/cm9vdA/build-linux/blob/master/boot/dts/rockchip/mainline/rk3399-fine3399.dts  
 
-经测试，基于cm9vdA大佬仓库里的fine3399_defconfig和DTS设备树编译出来的uboot23.07和22.07，上电虽然能正常点亮输出uboot启动信息(HDMI)，但是引导linux内核启动进入系统后卡死，原因未知。  
-而使用该DTS编译出来的linux kernel dtb，系统能正常工作，包括双网口，HDMI，PCIE设备，蓝色led。  
-ophub大佬release出来的Fine3399镜像直接烧录，无法正常启动，原因还是uboot。  
+~~经测试，基于cm9vdA大佬仓库里的fine3399_defconfig和DTS设备树编译出来的uboot23.07和22.07，上电虽然能正常点亮输出uboot启动信息(HDMI)，但是引导linux内核启动进入系统后卡死，原因未知。~~  
+~~而使用~~该DTS编译出来的linux kernel dtb，系统能正常工作，包括双网口，HDMI，PCIE设备，蓝色led。  
+~~ophub大佬release出来的Fine3399镜像直接烧录，无法正常启动，原因还是uboot。~~  
 
 之后又尝试，将xiayang0521的早期armbian固件提取出来的uboot引导分区镜像(https://github.com/QXY716/u-boot/blob/main/u-boot/rockchip/fine3399/uboot-bozz-rk3399.bin )，缝合进ophub大佬的固件之后，均能正常启动，内核5.15,6.1,6.6都通过。  
 本人水平有限，根据固件缝合原理，整出了一个临时解决方法。修改了rebuild重构脚本，在Fine3399固件生成时将uboot-bozz-rk3399.bin写入，达到替换uboot的效果。  
-代码语句：sudo dd if="${bootloader_path}/uboot-bozz-rk3399.bin" of="${loop_new}" bs=1k skip=32 seek=32 conv=notrunc 2>/dev/null  
+代码语句：dd if="${bootloader_path}/uboot-bozz-rk3399.bin" of="${loop_new}" bs=1k skip=32 seek=32 conv=notrunc 2>/dev/null  
 
 Fine3399固件的DTS中已经开启了pcie2.0 x2通道，双网口，HDMI，led正常工作，已满足大部分人的日常使用。  
-PWM、WIFI、蓝牙在DTS中默认关闭，并未开启。  
 
-2024.4.20: 添加R08支持  
+**2024.4.20: 添加R08支持**  
 
-本人适配的基于flippy打包脚本构建的openwrt下载地址：  
+2024.5.11: 将PWM、WIFI、蓝牙在DTS中的状况开启，在本仓库添加了Fine3399的AP6236固件，并且修改了rebuild脚本，经测试wifi和蓝牙已经能够正常使用，至此Armbian几近完美。  
+
+2024.6.2: 将DTS提交给了ophub大佬，同时Lemon1151也将uboot提交。现ophub仓库的固件已正常。  
+https://github.com/unifreq/linux-6.1.y/commit/c1c970d1b1de469123b5f16b6265474edba48111  
+https://github.com/ophub/amlogic-s9xxx-armbian/issues/2147?notification_referrer_id=NT_kwDOAqpqirM5Nzg2MzkxMDQxOjQ0NzIyODI2#issuecomment-2143830444  
+
+
+**本人适配的基于flippy打包脚本构建的openwrt下载地址：**  
 https://github.com/QXY716/flippy-openwrt-actions/releases  
 默认支持WIFI功能。  
 
-# Fine3399-full / 说明
+# Fine3399-Plus / 说明
 
-2024.5.11: 添加了Fine3399的AP6236固件，并且修改了rebuild脚本，经测试wifi和蓝牙已经能够正常使用，至此Armbian几近完美。  
-决定将机型命名为Fine3399-full，意为全功能版固件。  
-如无需无线蓝牙功能，只需下载非full普通版固件。  
+2024.6.10: 修改DTS并开启RK3399的大小核超频，机型命名为Fine3399-Plus，意为全功能版固件。  
+如无需CPU超频，只需下载非Plus普通版固件。  
 
 # Armbian
 
