@@ -3,7 +3,7 @@
 # Copyright (C) 2021 https://github.com/ophub/amlogic-s9xxx-armbian
 #==========================================================================
 
-name: Use Releases file to rebuild armbian
+name: Build armbian-xfce
 
 on:
   repository_dispatch:
@@ -12,7 +12,7 @@ on:
       set_release:
         description: "Select OS Release."
         required: false
-        default: "jammy"
+        default: "noble"
         type: choice
         options:
           - jammy
@@ -28,7 +28,7 @@ on:
           - all
           - s905w_s905x_s905mb_s905l3a_s905l3b_s905x2_s905x3_s912_s922x_s922x-ct2000_s922x-reva
           - s905x3-x88-pro-x3_s912-m8s-pro_s905x-t95_s912-t95z-plus_s905l3-unt400g1_s905lb-r3300l
-          - tanix-tx6_tb-ls3399_tn3399_tpm312_tqc-a01_tvi3315a_vplus_xiaobao_zcube1-max_zysj
+          - seewo-sv21_smart-am40_station-m1_sw799_tn3399_zysj_tvi3315a_xiaobao_zcube1-max
           - vplus_tanix-tx6_tqc-a01
           - a311d
           - beikeyun
@@ -204,7 +204,7 @@ on:
       armbian_fstype:
         description: "Select armbian rootfs type."
         required: false
-        default: "ext4"
+        default: "btrfs"
         type: choice
         options:
           - ext4
@@ -220,15 +220,16 @@ on:
       builder_name:
         description: "Set Armbian builder signature."
         required: false
-        default: "ophub"
+        default: "QXY716"
         type: choice
         options:
           - ophub
           - angel
-          - yourname
+          - QXY716
 
 env:
   TZ: America/New_York
+  ROOTFS_SCRIPT: compile-kernel/tools/script/armbian_rootfs.sh
 
 jobs:
   build:
@@ -279,46 +280,57 @@ jobs:
           sudo chown -R runner.runner /builder
           df -Th
 
-      - name: Download Armbian from Releases
+      - name: Download source code
         id: down
         working-directory: /builder
         if: ${{ steps.init.outputs.status }} == 'success' && !cancelled()
         run: |
-          armbian_buildpath="build/output/images"
-          [[ -d "${armbian_buildpath}" ]] || mkdir -p "${armbian_buildpath}"
+          df -hT ${PWD}
+          git clone -q --single-branch --depth=1 --branch=main https://github.com/armbian/build.git build
           ln -sf /builder/build ${GITHUB_WORKSPACE}/build
           ln -sf /builder/build /home/runner/work/_actions/QXY716/Fine3399-rk3399-armbian/main/build
-
-          latest_version="$(curl -s \
-                              -H "Accept: application/vnd.github+json" \
-                              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                              https://api.github.com/repos/${GITHUB_REPOSITORY}/releases?per_page=100 |
-                              jq '.[]' |
-                              jq -s --arg RTK "Armbian_${{ inputs.set_release }}_" '.[] | select(.tag_name | contains($RTK))' |
-                              jq -s '.[].assets[] | {data:.updated_at, url:.browser_download_url}' |
-                              jq -s --arg BOARD "-trunk_" '.[] | select((.url | contains($BOARD)) and (.url | endswith(".img.gz")))' |
-                              jq -s 'sort_by(.data)|reverse[]' |
-                              jq -s '.[0]' -c
-                          )"
-
-          [[ "${latest_version}" == "null" ]] && echo "Invalid Armbian image download address." && exit 1
-          latest_updated_at="$(echo ${latest_version} | jq -r '.data')"
-          latest_url="$(echo ${latest_version} | jq -r '.url')"
-
-          armbian_filename="${latest_url##*/}"
-          curl -fsSL "${latest_url}" -o "${armbian_buildpath}/${armbian_filename}"
-          [[ "${?}" -ne "0" ]] && echo "Invalid Armbian image download address." && exit 1
-          cd "${armbian_buildpath}" && gzip -df *.img.gz && sync
-
-          echo "build_tag=Armbian_${{ inputs.set_release }}_${{ inputs.armbian_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: Rebuild Armbian [ ${{ inputs.set_release }} ]
-        uses: QXY716/Fine3399-rk3399-armbian@main
+      - name: Compile Armbian [ ${{ inputs.set_release }} ]
+        id: compile
+        working-directory: /builder
         if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
+        run: |
+          # Compile method and parameter description: https://docs.armbian.com/Developer-Guide_Build-Options
+          cd build/
+              ./compile.sh RELEASE=${{ inputs.set_release }} BOARD=orangepi4-lts BRANCH=current BUILD_MINIMAL=no BUILD_ONLY=default HOST=armbian \
+                BUILD_DESKTOP=yes DESKTOP_APPGROUPS_SELECTED='browsers chat desktop_tools editors internet multimedia office programming remote_desktop' \
+                DESKTOP_ENVIRONMENT=xfce DESKTOP_ENVIRONMENT_CONFIG_NAME=config_base EXPERT=yes KERNEL_CONFIGURE=no COMPRESS_OUTPUTIMAGE="sha" SHARE_LOG=yes
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: Organize files and clear space
+        id: clean
+        if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
+        run: |
+          # Organize and keep essential files, delete unnecessary files
+          chmod +x ${ROOTFS_SCRIPT}
+          ${ROOTFS_SCRIPT} -v ${{ inputs.set_release }}
+
+          # Output cleaning result information
+          df -hT ${PWD}
+          echo "build_tag=Armbian_xfce_${{ inputs.set_release }}_${{ inputs.armbian_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: Upload Armbian image to Release
+        uses: ncipollo/release-action@main
+        if: ${{ steps.clean.outputs.status }} == 'success' && !cancelled()
+        with:
+          tag: ${{ steps.clean.outputs.build_tag }}
+          artifacts: build/output/images/*
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebuild Armbian
+        uses: QXY716/Fine3399-rk3399-armbian@main
+        if: ${{ steps.clean.outputs.status }} == 'success' && !cancelled()
         with:
           build_target: armbian
-          armbian_path: build/output/images/*.img
+          armbian_path: build/output/images/*.img.gz
           armbian_board: ${{ inputs.armbian_board }}
           armbian_kernel: ${{ inputs.armbian_kernel }}
           auto_kernel: ${{ inputs.auto_kernel }}
@@ -327,18 +339,18 @@ jobs:
           armbian_fstype: ${{ inputs.armbian_fstype }}
           builder_name: ${{ inputs.builder_name }}
 
-      - name: Upload Armbian image to Release
+      - name: Upload Rebuild image to Release
         uses: ncipollo/release-action@main
         if: ${{ env.PACKAGED_STATUS }} == 'success' && !cancelled()
         with:
-          tag: ${{ steps.down.outputs.build_tag }}
+          tag: ${{ steps.clean.outputs.build_tag }}
           artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
           allowUpdates: true
           removeArtifacts: false
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
-            ### Armbian Image information
+            ### Armbian with Xfce Image information
             - Default username: root
             - Default password: 1234
             - Install command: armbian-install
