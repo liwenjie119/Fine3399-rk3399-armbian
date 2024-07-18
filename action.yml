@@ -40,6 +40,10 @@ inputs:
     description: "Set armbian rootfs size(Unit: MiB)."
     required: false
     default: ""
+  os_type:
+    description: "Set Armbian OS type: server / desktop"
+    required: false
+    default: ""
   builder_name:
     description: "Set Armbian builder signature."
     required: false
@@ -159,6 +163,7 @@ runs:
             [[ -n "${{ inputs.auto_kernel }}" ]] && make_command="${make_command} -a ${{ inputs.auto_kernel }}"
             [[ -n "${{ inputs.armbian_fstype }}" ]] && make_command="${make_command} -t ${{ inputs.armbian_fstype }}"
             [[ -n "${{ inputs.armbian_size }}" ]] && make_command="${make_command} -s ${{ inputs.armbian_size }}"
+            [[ -n "${{ inputs.os_type }}" ]] && make_command="${make_command} -o ${{ inputs.os_type }}"
             [[ -n "${{ inputs.builder_name }}" ]] && make_command="${make_command} -n ${{ inputs.builder_name }}"
             sudo ./rebuild ${make_command}
 

@@ -174,7 +174,7 @@ init_var() {
     echo -e "${STEPS} Start Initializing Variables..."
 
     # If it is followed by [ : ], it means that the option requires a parameter value
-    get_all_ver="$(getopt "b:r:u:k:a:t:s:n:" "${@}")"
+    get_all_ver="$(getopt "b:r:u:k:a:t:s:o:n:" "${@}")"
 
     while [[ -n "${1}" ]]; do
         case "${1}" in
@@ -236,6 +236,14 @@ init_var() {
         -s | --Size)
             if [[ -n "${2}" ]]; then
                 img_mb="${2}"
+                shift
+            else
+                error_msg "Invalid -s parameter [ ${2} ]!"
+            fi
+            ;;
+        -o | --OsType)
+            if [[ -n "${2}" ]]; then
+                os_type="${2}"
                 shift
             else
                 error_msg "Invalid -s parameter [ ${2} ]!"
