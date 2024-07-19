@@ -9,7 +9,7 @@ cm9vdA大佬适配的DTS：https://github.com/cm9vdA/build-linux/blob/master/boo
 ~~而使用~~该DTS编译出来的linux kernel dtb，系统能正常工作，包括双网口，HDMI，PCIE设备，蓝色led。  
 ~~ophub大佬release出来的Fine3399镜像直接烧录，无法正常启动，原因还是uboot。~~  
 
-之后又尝试，将xiayang0521的早期armbian固件提取出来的uboot引导分区镜像(https://github.com/QXY716/u-boot/blob/main/u-boot/rockchip/fine3399/uboot-bozz-rk3399.bin )，缝合进ophub大佬的固件之后，均能正常启动，内核5.15,6.1,6.6都通过。  
+~~之后又尝试，将xiayang0521的早期armbian固件提取出来的uboot引导分区镜像(https://github.com/QXY716/u-boot/blob/main/u-boot/rockchip/fine3399/uboot-bozz-rk3399.bin )，缝合进ophub大佬的固件之后，均能正常启动，内核5.15,6.1,6.6都通过。~~  
 本人水平有限，根据固件缝合原理，整出了一个临时解决方法。修改了rebuild重构脚本，在Fine3399固件生成时将uboot-bozz-rk3399.bin写入，达到替换uboot的效果。  
 代码语句：dd if="${bootloader_path}/uboot-bozz-rk3399.bin" of="${loop_new}" bs=1k skip=32 seek=32 conv=notrunc 2>/dev/null  
 
@@ -23,6 +23,7 @@ Fine3399固件的DTS中已经开启了pcie2.0 x2通道，双网口，HDMI，led�
 https://github.com/unifreq/linux-6.1.y/commit/c1c970d1b1de469123b5f16b6265474edba48111  
 https://github.com/ophub/amlogic-s9xxx-armbian/issues/2147?notification_referrer_id=NT_kwDOAqpqirM5Nzg2MzkxMDQxOjQ0NzIyODI2#issuecomment-2143830444  
 
+**2024.7.18: 添加Armbian带桌面版本Xfce/Gnome的构建**  
 
 **本人适配的基于flippy打包脚本构建的openwrt下载地址：**  
 https://github.com/QXY716/flippy-openwrt-actions/releases  
@@ -30,8 +31,13 @@ https://github.com/QXY716/flippy-openwrt-actions/releases
 
 # Fine3399-Plus / 说明
 
+![Fine3399-Plus方案](https://gitee.com/opengisbook/Fine3399-Official/raw/main/imgs/banner.gif)  
+
 2024.6.10: 修改DTS并开启RK3399的大小核超频，机型命名为Fine3399-Plus，意为全功能版固件。  
 如无需CPU超频，只需下载非Plus普通版固件。  
+
+2024.7.13: 5.10、5.15、6.1内核仓库修改fbtft驱动支持SPI小屏幕，支持型号：st7735s。  
+Fine3399-Plus的设备树已添加该屏幕的节点配置。  
 
 # Armbian
 
@@ -231,6 +237,7 @@ sudo apt-get install -y $(cat compile-kernel/tools/script/ubuntu2204-build-armbi
 | -a        | AutoKernel | Set whether to automatically adopt the latest version of the same series of kernels. When it is `true`, it will automatically look for whether there is a newer version of the same series in the kernel library in the kernel specified in `-k`, such as 6.6.12. If there is a latest version after 6.6.12, it will be automatically changed to the latest version. When set to `false`, it will compile the specified version of the kernel. Default value: `true` |
 | -t        | RootfsType | Set the file system type of the system's ROOTFS partition, the options are `ext4` or `btrfs` type. For example: `-t btrfs`. Default value: `ext4` |
 | -s        | Size       | Set the size of the system's image partitions. When setting only the ROOTFS partition size, you can specify a single value, for example: `-s 2560`. When setting both BOOTFS and ROOTFS partition sizes, use / to connect the two values, for example: `-s 512/2560`. The default value is `512/2560` |
+| -o        | OsType      | Set Armbian OS type (server / desktop). Default value: `server` |
 | -n        | BuilderName | Set the Armbian system builder signature. Do not include spaces when setting the signature. Default value: `None` |
 
 - `sudo ./rebuild`: Use the default configuration to package all models of TV boxes.
